@@ -2,7 +2,6 @@ import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
 import { BshcClient } from 'bosch-smart-home-bridge';
 
 import { BoschAlertHomebridgePlatform } from './platform';
-import { throws } from 'assert';
 
 export class AlertSystemAccessory {
   private service: Service;
