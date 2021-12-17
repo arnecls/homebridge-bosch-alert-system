@@ -1,5 +1,5 @@
 {
-  "pluginAlias": "ExampleHomebridgePlugin",
+  "pluginAlias": "BoschAlertHomebridgePlugin",
   "pluginType": "platform",
   "singular": true,
   "schema": {
@@ -9,7 +9,19 @@
         "title": "Name",
         "type": "string",
         "required": true,
-        "default": "Example Dynamic Platform"
+        "default": "Alert System"
+      },
+      "host": {
+        "title": "Address",
+        "type": "string",
+        "required": true,
+        "default": "192.168.0.1"
+      },
+      "password": {
+        "title": "Password",
+        "type": "string",
+        "required": true,
+        "default": ""
       }
     }
   }

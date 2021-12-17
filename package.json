@@ -1,16 +1,20 @@
 {
   "private": true,
-  "displayName": "Plugin Name",
-  "name": "homebridge-plugin-name",
+  "displayName": "Bosch Smart Home alerting system",
+  "name": "homebridge-bosch-alert-system",
   "version": "1.0.0",
-  "description": "A short description about what your plugin does.",
+  "description": "Exposes a device for the Bosch Smart home alerting system",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git://github.com/USERNAME/GITHUB_PROJECT_NAME.git"
+    "url": "git://github.com/arnecls/homebridge-bosch-alert-system.git"
   },
   "bugs": {
-    "url": "https://github.com/USERNAME/GITHUB_PROJECT_NAME/issues"
+    "url": "https://github.com/arnecls/homebridge-bosch-alert-system/issues"
+  },
+  "volta": {
+    "node": "14.18.1",
+    "typescript": "4.4.4"
   },
   "engines": {
     "node": ">=14.18.1",
@@ -24,9 +28,13 @@
     "prepublishOnly": "npm run lint && npm run build"
   },
   "keywords": [
-    "homebridge-plugin"
+    "homebridge-plugin",
+    "bosch",
+    "smarthome"
   ],
-  "dependencies": {},
+  "dependencies": {
+    "bosch-smart-home-bridge": "^1.0.0"
+  },
   "devDependencies": {
     "@types/node": "^16.10.9",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
