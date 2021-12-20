@@ -3,13 +3,18 @@ import { BshcClient } from 'bosch-smart-home-bridge';
 
 import { BoschAlertHomebridgePlatform } from './platform';
 
+enum IntrusionSystemState {
+  Arming = 'SYSTEM_ARMING',
+  Armed = 'SYSTEM_ARMED',
+  Disarmed = 'SYSTEM_DISARMED',
+  Unkown = '',
+  Disconnect = 'DISCONNECT',
+}
+
 export class AlertSystemAccessory {
   private service: Service;
   private client: BshcClient;
-
-  private connectionError = false;
-  private state = false; // on, off, error
-  private targetState = false; // on, off
+  private state = IntrusionSystemState.Unkown;
 
   constructor(
     private readonly platform: BoschAlertHomebridgePlatform,
@@ -37,14 +42,14 @@ export class AlertSystemAccessory {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const _this = this;
 
+    // See https://apidocs.bosch-smarthome.com/local/#/States/get_intrusion_states_system
     this.client.getIntrusionDetectionSystemState().subscribe({
       next(value) {
-        _this.connectionError = false;
-        _this.state = value.parsedResponse as boolean;
+        _this.state = value.parsedResponse.armingState.state;
       },
       error(msg) {
-        _this.connectionError = true;
         platform.log.error('Error Getting target state: ', msg);
+        throw new platform.api.hap.HapStatusError(platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
       },
     });
   }
@@ -52,30 +57,22 @@ export class AlertSystemAccessory {
   async getCurrentState(): Promise<CharacteristicValue> {
     this.platform.log.debug('Get Characteristic CurrentState');
 
-    if (this.connectionError) {
-      throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
-    }
-    return this.state;
+    return this.state === IntrusionSystemState.Armed;
   }
 
   async getTargetState(): Promise<CharacteristicValue> {
     this.platform.log.debug('Get Characteristic TargetState');
 
-    if (this.connectionError) {
-      throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
-    }
-    return this.targetState;
+    return this.state === IntrusionSystemState.Armed || this.state === IntrusionSystemState.Arming;
   }
 
   async setTargetState(value: CharacteristicValue) {
     this.platform.log.debug('Set State -> ', value as boolean);
 
     if (value as boolean) {
-      this.client.armIntrusionDetectionSystem(); // TODO: Preset on which state
-      this.targetState = true;
+      this.client.armIntrusionDetectionSystem(); // TODO: Config option to define which state
     } else {
       this.client.disarmIntrusionDetectionSystem();
-      this.targetState = false;
     }
 
     // TODO evaluate response

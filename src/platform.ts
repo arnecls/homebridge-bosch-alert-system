@@ -1,5 +1,5 @@
 import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
-import { BshbUtils, BshcClient, BoschSmartHomeBridgeBuilder } from 'bosch-smart-home-bridge';
+import { BshcClient, BoschSmartHomeBridgeBuilder } from 'bosch-smart-home-bridge';
 import { PLATFORM_NAME, PLUGIN_NAME, UUID } from './settings';
 import { AlertSystemAccessory } from './alertAccessory';
 
@@ -21,17 +21,13 @@ export class BoschAlertHomebridgePlatform implements DynamicPlatformPlugin {
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
-    const certificate = BshbUtils.generateClientCertificate();
     const bshb = BoschSmartHomeBridgeBuilder.builder()
       .withHost(this.config.host)
-      .withClientCert(certificate.cert)
-      .withClientPrivateKey(certificate.private)
+      .withClientCert(config.clientCert)
+      .withClientPrivateKey(config.clientKey)
       .build();
 
     this.log.debug('Finished initializing platform:', this.config.name);
-
-    const identifier = BshbUtils.generateIdentifier();
-    bshb.pairIfNeeded('Homebridge', identifier, this.config.password);
 
     this.Client = bshb.getBshcClient();
 
