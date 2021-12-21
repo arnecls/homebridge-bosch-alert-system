@@ -17,23 +17,19 @@
         "required": true,
         "default": "192.168.0.10"
       },
-      "password": {
-        "title": "Password",
-        "type": "string",
-        "required": true,
-        "default": ""
-      },
       "clientCert": {
         "title": "Client certificate",
         "type": "string",
         "required": true,
-        "default": ""
+        "default": "",
+        "description": "base64 encoded client ertificate file"
       },
       "clientKey": {
         "title": "Client key",
         "type": "string",
         "required": true,
-        "default": ""
+        "default": "",
+        "description": "base64 encoded client key file"
       }
     }
   }

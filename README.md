@@ -36,7 +36,9 @@ These steps have been derived from the [Bosch API docs](https://github.com/Bosch
    curl -sk "https://${CONTROLLER_IP}:8446/smarthome/public/information"
    ```
 
-3. Generate a client request file named `request.json` using your editor of choice
+3. Generate a client request file named `request.json` using your editor of choice.
+   Make sure the certificate string has the form `-----BEGIN CERTIFICATE-----\r....\r-----END CERTIFICATE-----`.
+   Especially the two `\r` are important.
 
    ```json
    {
@@ -51,24 +53,27 @@ These steps have been derived from the [Bosch API docs](https://github.com/Bosch
 5. Pair with the controller
 
    ```bash
-   CONTROLLER_IP=192.168.0.10
-   ```
-  
-   ```bash
    curl -sk -X POST \
      -H "Content-Type: application/json" \
-     -H "api-version: 2.1" \
-     -H "Systempassword: $(echo 'insert controller password here' | base64)" \
+     -H "Expect:" \
+     -H "Systempassword: $(echo -n 'insert controller password here' | base64)" \
      -d @request.json \
      "https://${CONTROLLER_IP}:8443/smarthome/clients"
    ```
 
-   This call will return a JSON object with "certificate" containing the signed client certificate.
-   If you have `jq` is installed on your system, you can use it to directly store the certificate to a file.
- 
-   ```bash
-   curl -sk -X POST ... | jq -r '.certificate' > signed-client-cert.pem
-   ```
+   This call will register the client certificate with the server.
+   It should now show up in your Bosch smarthome app.
+   If you receive an HTTP 401 error, the password is likely wrong.
 
 Store the client key and signed certificate in a safe location.
 You will need to pass the certificate and client key to the plugin.
+
+## Setup
+
+To use the plugin, you must pass the client certificate and key registered in the step above.  
+As Homebridge does not support multi-line text fields, but linefeeds are required here, you need to pass in the two files as base64 encoded.
+
+```bash
+base64 -i client-cert.pem # your encoded certificate
+base64 -i client-key.pem  # your encoded client key
+```

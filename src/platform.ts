@@ -21,10 +21,13 @@ export class BoschAlertHomebridgePlatform implements DynamicPlatformPlugin {
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
+    const clientCert = Buffer.from(config.clientCert, 'base64').toString();
+    const clientKey = Buffer.from(config.clientKey, 'base64').toString();
+
     const bshb = BoschSmartHomeBridgeBuilder.builder()
       .withHost(this.config.host)
-      .withClientCert(config.clientCert)
-      .withClientPrivateKey(config.clientKey)
+      .withClientCert(clientCert)
+      .withClientPrivateKey(clientKey)
       .build();
 
     this.log.debug('Finished initializing platform:', this.config.name);
