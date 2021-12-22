@@ -122,9 +122,11 @@ export class AlertSystemAccessory {
         // Disarming is instant, so target state == current state
         // No need to check alarm state here
         case BoschSecurityState.ARMED, BoschSecurityState.ARMING:
+          this.platform.log.debug('Target state armed');
           return this.getArmStateStr(result.parsedResponse.activeConfigurationProfile.profileId);
 
         default:
+          this.platform.log.debug('Target state disarmed');
           return HomeKitSecurityState.DISARMED;
       }
     } catch (error) {
@@ -144,10 +146,12 @@ export class AlertSystemAccessory {
           break;
 
         case HomeKitSecurityState.DISARMED:
+          this.platform.log.info('Disarming alarm system');
           await firstValueFrom(this.client.disarmIntrusionDetectionSystem());
           return targetState;
 
         default:
+          this.platform.log.info('Arming alarm system');
           await firstValueFrom(this.client.armIntrusionDetectionSystem(profileID));
           return targetState;
       }
