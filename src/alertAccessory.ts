@@ -1,24 +1,20 @@
-import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
-import { BshcClient } from 'bosch-smart-home-bridge';
+import { Service, PlatformAccessory, CharacteristicValue, HAPStatus } from 'homebridge';
+import { BshbError, BshbErrorType, BshcClient } from 'bosch-smart-home-bridge';
 
 import { BoschAlertHomebridgePlatform } from './platform';
-
-enum IntrusionSystemState {
-  Arming = 'SYSTEM_ARMING',
-  Armed = 'SYSTEM_ARMED',
-  Disarmed = 'SYSTEM_DISARMED',
-  Unkown = '',
-  Disconnect = 'DISCONNECT',
-}
+import { firstValueFrom } from 'rxjs';
+import { rejects } from 'assert';
+import { HomeKitSecurityState, BoschSecurityState, BoschAlarmState } from './alertStates';
 
 export class AlertSystemAccessory {
   private service: Service;
   private client: BshcClient;
-  private state = IntrusionSystemState.Unkown;
+  private profileIDToArmState: Map<number, HomeKitSecurityState>;
 
   constructor(
     private readonly platform: BoschAlertHomebridgePlatform,
     private readonly accessory: PlatformAccessory,
+    private readonly armStateToProfileID: Map<HomeKitSecurityState, number>,
   ) {
 
     // set accessory information
@@ -30,6 +26,11 @@ export class AlertSystemAccessory {
     this.service = this.accessory.getService(this.platform.Service.SecuritySystem) ||
       this.accessory.addService(this.platform.Service.SecuritySystem);
 
+    this.profileIDToArmState = new Map<number, HomeKitSecurityState>();
+    this.armStateToProfileID.forEach((value, key) => {
+      this.profileIDToArmState.set(value, key);
+    });
+
     this.service.setCharacteristic(this.platform.Characteristic.Name, 'Alerting System');
 
     this.service.getCharacteristic(this.platform.Characteristic.SecuritySystemCurrentState)
@@ -38,43 +39,120 @@ export class AlertSystemAccessory {
     this.service.getCharacteristic(this.platform.Characteristic.SecuritySystemTargetState)
       .onSet(this.setTargetState.bind(this))
       .onGet(this.getTargetState.bind(this));
+  }
 
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const _this = this;
+  getProfileID(armState: HomeKitSecurityState, defaultProfileID=0): number {
+    const profile = this.armStateToProfileID.get(armState);
+    if (profile === undefined) {
+      // Not all states are mapped to profiles, so this is fine
+      return defaultProfileID;
+    }
+    return profile;
+  }
 
-    // See https://apidocs.bosch-smarthome.com/local/#/States/get_intrusion_states_system
-    this.client.getIntrusionDetectionSystemState().subscribe({
-      next(value) {
-        _this.state = value.parsedResponse.armingState.state;
-      },
-      error(msg) {
-        platform.log.error('Error Getting target state: ', msg);
-        throw new platform.api.hap.HapStatusError(platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
-      },
-    });
+  getArmStateStr(profileIDstr: string): HomeKitSecurityState {
+    const profileID = parseInt(profileIDstr, 10);
+    if (profileID === undefined) {
+      this.platform.log.warn('Profile is not a number:', profileIDstr);
+      return HomeKitSecurityState.DISARMED;
+    }
+    return this.getArmState(profileID);
+  }
+
+  getArmState(profileID: number): HomeKitSecurityState {
+    //this.platform.log.debug('profileToState', JSON.stringify(Object.fromEntries(this.profileIDToArmState)));
+
+    const armState = this.profileIDToArmState.get(profileID);
+    if (armState === undefined) {
+      this.platform.log.warn('Profile ID not mapped to HomeKit state:', profileID);
+      return HomeKitSecurityState.DISARMED;
+    }
+    return armState;
+  }
+
+  onError(err): HAPStatus {
+    const error = err as BshbError;
+    this.platform.log.error(error.message);
+
+    switch (error.errorType) {
+      case BshbErrorType.TIMEOUT:
+        return HAPStatus.OPERATION_TIMED_OUT;
+      case BshbErrorType.PARSING:
+        return HAPStatus.INVALID_VALUE_IN_REQUEST;
+      default:
+        return HAPStatus.SERVICE_COMMUNICATION_FAILURE;
+    }
   }
 
   async getCurrentState(): Promise<CharacteristicValue> {
-    this.platform.log.debug('Get Characteristic CurrentState');
+    try {
+      const result = await firstValueFrom(this.client.getIntrusionDetectionSystemState());
+      const systemState = result.parsedResponse.armingState.state as BoschSecurityState;
+      const alarmState = result.parsedResponse.alarmState.value as BoschAlarmState;
 
-    return this.state === IntrusionSystemState.Armed;
+      this.platform.log.debug('System state:', systemState);
+      this.platform.log.debug('Alarm state:', alarmState);
+
+      switch (systemState) {
+        case BoschSecurityState.ARMED:
+          switch (alarmState) {
+            case BoschAlarmState.TRIGGERED, BoschAlarmState.ON, BoschAlarmState.MUTED:
+              return HomeKitSecurityState.ALARM_TRIGGERED;
+          }
+          return this.getArmStateStr(result.parsedResponse.activeConfigurationProfile.profileId);
+
+        // If it's arming the current state is still DISARMED
+        default:
+          return HomeKitSecurityState.DISARMED;
+      }
+    } catch (error) {
+      throw new this.platform.api.hap.HapStatusError(this.onError(error));
+    }
   }
 
   async getTargetState(): Promise<CharacteristicValue> {
-    this.platform.log.debug('Get Characteristic TargetState');
+    try {
+      const result = await firstValueFrom(this.client.getIntrusionDetectionSystemState());
+      const systemState = result.parsedResponse.armingState.state as BoschSecurityState;
 
-    return this.state === IntrusionSystemState.Armed || this.state === IntrusionSystemState.Arming;
+      this.platform.log.debug('System state:', systemState);
+
+      switch (systemState) {
+        // If it's arming the next state is ARMED
+        // Disarming is instant, so target state == current state
+        // No need to check alarm state here
+        case BoschSecurityState.ARMED, BoschSecurityState.ARMING:
+          return this.getArmStateStr(result.parsedResponse.activeConfigurationProfile.profileId);
+
+        default:
+          return HomeKitSecurityState.DISARMED;
+      }
+    } catch (error) {
+      throw new this.platform.api.hap.HapStatusError(this.onError(error));
+    }
   }
 
   async setTargetState(value: CharacteristicValue) {
-    this.platform.log.debug('Set State -> ', value as boolean);
+    this.platform.log.debug('Set state:', value as HomeKitSecurityState);
+    const targetState = value as HomeKitSecurityState;
+    const profileID = this.getProfileID(targetState);
 
-    if (value as boolean) {
-      this.client.armIntrusionDetectionSystem(); // TODO: Config option to define which state
-    } else {
-      this.client.disarmIntrusionDetectionSystem();
+    try {
+      switch (targetState) {
+        case HomeKitSecurityState.ALARM_TRIGGERED:
+          rejects; // unsupported
+          break;
+
+        case HomeKitSecurityState.DISARMED:
+          await firstValueFrom(this.client.disarmIntrusionDetectionSystem());
+          return targetState;
+
+        default:
+          await firstValueFrom(this.client.armIntrusionDetectionSystem(profileID));
+          return targetState;
+      }
+    } catch (error) {
+      throw new this.platform.api.hap.HapStatusError(this.onError(error));
     }
-
-    // TODO evaluate response
   }
 }

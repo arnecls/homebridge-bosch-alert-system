@@ -2,6 +2,7 @@ import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, 
 import { BshcClient, BoschSmartHomeBridgeBuilder } from 'bosch-smart-home-bridge';
 import { PLATFORM_NAME, PLUGIN_NAME, UUID } from './settings';
 import { AlertSystemAccessory } from './alertAccessory';
+import { HomeKitSecurityState } from './alertStates';
 
 /**
  * HomebridgePlatform
@@ -62,37 +63,32 @@ export class BoschAlertHomebridgePlatform implements DynamicPlatformPlugin {
    * must not be registered again to prevent "duplicate UUID" errors.
    */
   discoverDevices() {
+    // TODO: Make profile mapping configurable
+
+    // curl -ks "https://192.168.0.6:8444/smarthome/intrusion/profiles"
+    // Iterate over .[] | select(.deleted==false && .configured==true) | .id
+    // 0 = Full protection
+    // 1 = Partial protection
+
+    const profileMap = new Map<HomeKitSecurityState, number>([
+      [HomeKitSecurityState.AWAY_ARM, 0],
+      [HomeKitSecurityState.STAY_ARM, 1],
+      //[HomeKitSecurityState.NIGHT_ARM, 0], // Currently implicit
+    ]);
+
     const uuid = this.api.hap.uuid.generate(UUID);
     const existingAccessory = this.accessories.find(accessory => accessory.UUID === uuid);
 
     if (existingAccessory) {
       // the accessory already exists
       this.log.info('Restoring existing accessory from cache:', existingAccessory.displayName);
+      new AlertSystemAccessory(this, existingAccessory, profileMap);
 
-      // if you need to update the accessory.context then you should run `api.updatePlatformAccessories`. eg.:
-      // existingAccessory.context.device = device;
-      // this.api.updatePlatformAccessories([existingAccessory]);
-
-      // create the accessory handler for the restored accessory
-      // this is imported from `platformAccessory.ts`
-      new AlertSystemAccessory(this, existingAccessory);
-
-      // it is possible to remove platform accessories at any time using `api.unregisterPlatformAccessories`, eg.:
-      // remove platform accessories when no longer present
-      // this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [existingAccessory]);
-      // this.log.info('Removing existing accessory from cache:', existingAccessory.displayName);
     } else {
-      // the accessory does not yet exist, so we need to create it
       this.log.info('Adding new alerting system');
-
-      // create a new accessory
       const accessory = new this.api.platformAccessory('Alerting system', uuid);
 
-      // create the accessory handler for the newly create accessory
-      // this is imported from `platformAccessory.ts`
-      new AlertSystemAccessory(this, accessory);
-
-      // link the accessory to your platform
+      new AlertSystemAccessory(this, accessory, profileMap);
       this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
     }
   }
