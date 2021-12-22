@@ -1,5 +1,5 @@
 import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
-import { BshcClient, BoschSmartHomeBridgeBuilder } from 'bosch-smart-home-bridge';
+import { BshcClient, BoschSmartHomeBridgeBuilder, BshbUtils } from 'bosch-smart-home-bridge';
 import { PLATFORM_NAME, PLUGIN_NAME, UUID } from './settings';
 import { AlertSystemAccessory } from './alertAccessory';
 import { HomeKitSecurityState } from './alertStates';
@@ -22,14 +22,29 @@ export class BoschAlertHomebridgePlatform implements DynamicPlatformPlugin {
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
-    const clientCert = Buffer.from(config.clientCert, 'base64').toString();
-    const clientKey = Buffer.from(config.clientKey, 'base64').toString();
+    // TODO: Allow pairing through config option
+
+    let clientCert: string;
+    let clientKey: string;
+
+    if (config.autoPair) {
+      const certificate = BshbUtils.generateClientCertificate();
+      clientCert = certificate.clientCert;
+      clientKey = certificate.clientKey;
+    } else {
+      clientCert = Buffer.from(config.clientCert, 'base64').toString();
+      clientKey = Buffer.from(config.clientKey, 'base64').toString();
+    }
 
     const bshb = BoschSmartHomeBridgeBuilder.builder()
       .withHost(this.config.host)
       .withClientCert(clientCert)
       .withClientPrivateKey(clientKey)
       .build();
+
+    if (config.autoPair) {
+      bshb.pairIfNeeded('OSS Homebridge plugin', 'oss_homebridge_plugin', config.systemPassword);
+    }
 
     this.log.debug('Finished initializing platform:', this.config.name);
 

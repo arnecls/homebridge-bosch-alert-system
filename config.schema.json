@@ -17,19 +17,42 @@
         "required": true,
         "default": "192.168.0.10"
       },
+      "autoPair": {
+        "title": "Generate certificates",
+        "type": "boolean",
+        "required": false,
+        "default": false,
+        "description": "Generate credentials through homebridge (see README)"
+      },
       "clientCert": {
         "title": "Client certificate",
         "type": "string",
-        "required": true,
+        "required": false,
         "default": "",
-        "description": "base64 encoded client ertificate file"
+        "description": "base64 encoded client ertificate file",
+        "condition": {
+            "functionBody": "return model.autoPair === false;"
+        }
       },
       "clientKey": {
         "title": "Client key",
         "type": "string",
-        "required": true,
+        "required": false,
         "default": "",
-        "description": "base64 encoded client key file"
+        "description": "base64 encoded client key file",
+        "condition": {
+            "functionBody": "return model.autoPair === false;"
+        }
+      },
+      "systemPassword": {
+        "title": "System password",
+        "type": "string",
+        "required": false,
+        "default": "",
+        "description": "System password",
+        "condition": {
+            "functionBody": "return model.autoPair === true;"
+        }
       }
     }
   }

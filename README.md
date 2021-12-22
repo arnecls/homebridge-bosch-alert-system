@@ -11,7 +11,22 @@
 
 This plugin exposes the Bosch smarthome alerting (intrusion) system to Homekit.
 
-## Prerequisites
+## Certificates
+
+It is recommended to generate and register certificates yourself, as these credentials will stay intact even when the homebridge plugin state is lost. It is also much clearer on when to use the "pair" button on your controller.
+
+### Let homebridge generate certificates
+
+This option generates certificates through homebridge.
+To enable this you must provide your Bosch smarthome controller system password.
+
+After configuring the plugin to generate credentials, and *_before you restart homebridge_* you have to press the pairing button on your bosch smarthome controller.  
+The homebrdige logs will tell you when the plugin is starting the pairing process, but you should allow pairing _before_ it does so.
+
+If the pairing succeeded, the plugin should show in your bosch smarthome app.
+If you have to re-pair, you need to remove the plugin from the bosch smarthome app first.
+
+### Generate certificates yourself
 
 The Smarthome API uses mutual TLS to protect itself from unwanted access.  
 This requires you to authenticate the plugin before it can be used.  
@@ -68,7 +83,7 @@ These steps have been derived from the [Bosch API docs](https://github.com/Bosch
 Store the client key and signed certificate in a safe location.
 You will need to pass the certificate and client key to the plugin.
 
-## Setup
+### Setup certificates
 
 To use the plugin, you must pass the client certificate and key registered in the step above.  
 As Homebridge does not support multi-line text fields, but linefeeds are required here, you need to pass in the two files as base64 encoded.
