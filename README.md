@@ -52,7 +52,7 @@ These steps have been derived from the [Bosch API docs](https://github.com/Bosch
 1. You need to create an RSA key pair, that will identifiy your client.
 
    ```bash
-   openssl req -x509 -nodes -days 9999 -newkey rsa:2048 -keyout client-key.pem -out client-cert.pem
+   openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout client-key.pem -out client-cert.pem
    ```
 
 2. Find out your Smarthome controller IP. Test it with the following command
