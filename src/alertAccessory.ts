@@ -70,6 +70,7 @@ export class AlertSystemAccessory {
     return armState;
   }
 
+  // Convert Bosch errors to HAP errors
   onError(err): HAPStatus {
     const error = err as BshbError;
     this.platform.log.error(error.message);
@@ -84,6 +85,7 @@ export class AlertSystemAccessory {
     }
   }
 
+  // Properly react on a running pairing process.
   async ensurePaired(timeoutMs = 200): Promise<void> {
     return Promise.race([
       this.platform.pairingProcess,
@@ -107,7 +109,9 @@ export class AlertSystemAccessory {
       switch (systemState) {
         case BoschSecurityState.ARMED:
           switch (alarmState) {
-            case BoschAlarmState.TRIGGERED, BoschAlarmState.ON, BoschAlarmState.MUTED:
+            case BoschAlarmState.TRIGGERED:
+            case BoschAlarmState.ON:
+            case BoschAlarmState.MUTED:
               return HomeKitSecurityState.ALARM_TRIGGERED;
           }
           return this.getArmStateStr(result.parsedResponse.activeConfigurationProfile.profileId);
@@ -133,7 +137,8 @@ export class AlertSystemAccessory {
         // If it's arming the next state is ARMED
         // Disarming is instant, so target state == current state
         // No need to check alarm state here
-        case BoschSecurityState.ARMED, BoschSecurityState.ARMING:
+        case BoschSecurityState.ARMED:
+        case BoschSecurityState.ARMING:
           this.platform.log.debug('Target state armed');
           return this.getArmStateStr(result.parsedResponse.activeConfigurationProfile.profileId);
 
