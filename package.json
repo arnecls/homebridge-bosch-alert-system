@@ -39,7 +39,9 @@
     "alerting"
   ],
   "dependencies": {
-    "bosch-smart-home-bridge": "^1.0.0"
+    "bosch-smart-home-bridge": "^1.0.0",
+    "rxjs": "^7.4.0",
+    "selfsigned": "^1.10.11"
   },
   "devDependencies": {
     "@types/node": "^16.11.14",

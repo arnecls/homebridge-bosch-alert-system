@@ -1,8 +1,11 @@
 import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
-import { BshcClient, BoschSmartHomeBridgeBuilder, BshbUtils } from 'bosch-smart-home-bridge';
+import { BshcClient, BoschSmartHomeBridgeBuilder, BoschSmartHomeBridge, BshbResponse } from 'bosch-smart-home-bridge';
 import { PLATFORM_NAME, PLUGIN_NAME, UUID } from './settings';
 import { AlertSystemAccessory } from './alertAccessory';
 import { HomeKitSecurityState } from './alertStates';
+import { firstValueFrom } from 'rxjs';
+import { readFileSync, existsSync, writeFileSync } from 'fs';
+import * as selfsigned from 'selfsigned';
 
 /**
  * HomebridgePlatform
@@ -15,6 +18,10 @@ export class BoschAlertHomebridgePlatform implements DynamicPlatformPlugin {
 
   // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
+  // this Promise will resolve after pairing is done
+  public readonly pairingProcess: Promise<void>;
+
+  // Bosch client
   public Client: BshcClient;
 
   constructor(
@@ -22,15 +29,11 @@ export class BoschAlertHomebridgePlatform implements DynamicPlatformPlugin {
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
-    // TODO: Allow pairing through config option
-
     let clientCert: string;
     let clientKey: string;
 
     if (config.autoPair) {
-      const certificate = BshbUtils.generateClientCertificate();
-      clientCert = certificate.clientCert;
-      clientKey = certificate.clientKey;
+      [clientCert, clientKey] = this.ensureClientCertificate();
     } else {
       clientCert = Buffer.from(config.clientCert, 'base64').toString();
       clientKey = Buffer.from(config.clientKey, 'base64').toString();
@@ -43,20 +46,19 @@ export class BoschAlertHomebridgePlatform implements DynamicPlatformPlugin {
       .build();
 
     if (config.autoPair) {
-      bshb.pairIfNeeded('OSS Homebridge plugin', 'oss_homebridge_plugin', config.systemPassword);
+      this.pairingProcess = this.pair(bshb) as Promise<void>;
+    } else {
+      // We are already paired, so resolve immedeatley
+      this.pairingProcess = new Promise((resolve) => {
+        resolve();
+      });
     }
 
+    this.Client = bshb.getBshcClient();
     this.log.debug('Finished initializing platform:', this.config.name);
 
-    this.Client = bshb.getBshcClient();
-
-    // When this event is fired it means Homebridge has restored all cached accessories from disk.
-    // Dynamic Platform plugins should only register new accessories after this event was fired,
-    // in order to ensure they weren't added to homebridge already. This event can also be used
-    // to start discovery of new accessories.
     this.api.on('didFinishLaunching', () => {
       log.debug('Executed didFinishLaunching callback');
-      // run the method to discover / register your devices as accessories
       this.discoverDevices();
     });
   }
@@ -72,11 +74,44 @@ export class BoschAlertHomebridgePlatform implements DynamicPlatformPlugin {
     this.accessories.push(accessory);
   }
 
-  /**
-   * This is an example method showing how to register discovered accessories.
-   * Accessories must only be registered once, previously created accessories
-   * must not be registered again to prevent "duplicate UUID" errors.
-   */
+  // Generates a client certificate or reads the existing one from disk.
+  ensureClientCertificate() : [cert: string, key: string] {
+    const storagePath = this.api.user.storagePath();
+    const certFilePath = storagePath + '/bosch-client-cert.txt';
+    const keyFilePath = storagePath + '/bosch-client-key.txt';
+
+    if (existsSync(certFilePath) && existsSync(keyFilePath)) {
+      this.log.info('Found existing client certficate');
+      const clientCert = readFileSync(certFilePath).toString();
+      const clientKey = readFileSync(keyFilePath).toString();
+      return [clientCert, clientKey];
+    }
+
+    this.log.info('Generating client certficate');
+
+    // Create a certificate that is valid for 10 years
+    const cert = selfsigned.generate(null, {
+      keySize: 2048,
+      clientCertificate: false,
+      algorithm: 'sha256',
+      days: 3650});
+
+    // We only need to generate this certificate once, regardless of
+    // paring result, as peering just registers the client cert with the
+    // controller.
+    writeFileSync(certFilePath, cert.private);
+    writeFileSync(keyFilePath, cert.cert);
+    return [cert.cert, cert.private];
+  }
+
+  // Initiate pairing if required
+  async pair(bshb: BoschSmartHomeBridge) {
+    return firstValueFrom(bshb.pairIfNeeded('OSS Homebridge plugin (generated)', 'oss_homebridge_plugin_gen', this.config.systemPassword))
+      .catch((reason) => {
+        this.log.error('Pairing failed:', reason);
+      });
+  }
+
   discoverDevices() {
     // TODO: Make profile mapping configurable
 
