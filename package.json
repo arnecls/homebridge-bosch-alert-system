@@ -2,12 +2,13 @@
   "private": false,
   "displayName": "Bosch Smart Home alerting system",
   "name": "homebridge-bosch-alert-system",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Exposes a device for the Bosch Smart home alerting system",
   "license": "Apache-2.0",
   "files": [
     "LICENSE",
-    "dist"
+    "dist",
+    "config.schema.json"
   ],
   "repository": {
     "type": "git",
