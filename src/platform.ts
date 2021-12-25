@@ -1,5 +1,5 @@
 import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
-import { BshcClient, BoschSmartHomeBridgeBuilder, BoschSmartHomeBridge, BshbResponse } from 'bosch-smart-home-bridge';
+import { BshcClient, BoschSmartHomeBridgeBuilder, BoschSmartHomeBridge } from 'bosch-smart-home-bridge';
 import { PLATFORM_NAME, PLUGIN_NAME, UUID } from './settings';
 import { AlertSystemAccessory } from './alertAccessory';
 import { HomeKitSecurityState } from './alertStates';
