@@ -1,5 +1,5 @@
 {
-  "private": true,
+  "private": false,
   "displayName": "Bosch Smart Home alerting system",
   "name": "homebridge-bosch-alert-system",
   "version": "1.0.0",
