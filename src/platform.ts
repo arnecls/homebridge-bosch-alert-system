@@ -6,6 +6,7 @@ import { HomeKitSecurityState } from './alertStates';
 import { firstValueFrom } from 'rxjs';
 import { readFileSync, existsSync, writeFileSync } from 'fs';
 import * as selfsigned from 'selfsigned';
+import { HomeBridgeLogWrapper } from './logger';
 
 /**
  * HomebridgePlatform
@@ -43,6 +44,7 @@ export class BoschAlertHomebridgePlatform implements DynamicPlatformPlugin {
       .withHost(this.config.host)
       .withClientCert(clientCert)
       .withClientPrivateKey(clientKey)
+      .withLogger(new HomeBridgeLogWrapper(log))
       .build();
 
     if (config.autoPair) {
@@ -59,7 +61,7 @@ export class BoschAlertHomebridgePlatform implements DynamicPlatformPlugin {
 
     this.api.on('didFinishLaunching', () => {
       log.debug('Executed didFinishLaunching callback');
-      this.discoverDevices();
+        this.discoverDevices();
     });
   }
 
