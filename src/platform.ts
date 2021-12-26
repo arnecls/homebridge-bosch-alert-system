@@ -61,7 +61,9 @@ export class BoschAlertHomebridgePlatform implements DynamicPlatformPlugin {
 
     this.api.on('didFinishLaunching', () => {
       log.debug('Executed didFinishLaunching callback');
+      this.pairingProcess.then(() => {
         this.discoverDevices();
+      });
     });
   }
 
@@ -71,8 +73,6 @@ export class BoschAlertHomebridgePlatform implements DynamicPlatformPlugin {
    */
   configureAccessory(accessory: PlatformAccessory) {
     this.log.info('Loading accessory from cache:', accessory.displayName);
-
-    // add the restored accessory to the accessories cache so we can track if it has already been registered
     this.accessories.push(accessory);
   }
 

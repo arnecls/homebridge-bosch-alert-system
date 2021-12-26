@@ -85,19 +85,7 @@ export class AlertSystemAccessory {
     }
   }
 
-  // Properly react on a running pairing process.
-  async ensurePaired(timeoutMs = 200): Promise<void> {
-    return Promise.race([
-      this.platform.pairingProcess,
-      new Promise<void>((_resolve, reject) => setTimeout(() => reject(), timeoutMs)),
-    ]).catch(() => {
-      this.platform.log.error('Pairing still in process');
-    });
-  }
-
   async getCurrentState(): Promise<CharacteristicValue> {
-    await this.ensurePaired();
-
     try {
       const result = await firstValueFrom(this.client.getIntrusionDetectionSystemState());
       const systemState = result.parsedResponse.armingState.state as BoschSecurityState;
@@ -126,7 +114,6 @@ export class AlertSystemAccessory {
   }
 
   async getTargetState(): Promise<CharacteristicValue> {
-    await this.ensurePaired();
     try {
       const result = await firstValueFrom(this.client.getIntrusionDetectionSystemState());
       const systemState = result.parsedResponse.armingState.state as BoschSecurityState;
@@ -152,7 +139,6 @@ export class AlertSystemAccessory {
   }
 
   async setTargetState(value: CharacteristicValue) {
-    await this.ensurePaired();
     this.platform.log.debug('Set state:', value as HomeKitSecurityState);
     const targetState = value as HomeKitSecurityState;
     const profileID = this.getProfileID(targetState);
