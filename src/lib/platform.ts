@@ -1,5 +1,5 @@
 import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
-import { BshcClient, BoschSmartHomeBridgeBuilder, BoschSmartHomeBridge } from 'bosch-smart-home-bridge';
+import { BshcClient, BoschSmartHomeBridgeBuilder } from 'bosch-smart-home-bridge';
 import { PLATFORM_NAME, PLUGIN_NAME, UUID } from '../model/settings';
 import { AlertSystemAccessory } from './alertAccessory';
 import { HomeKitSecurityState } from '../model/alertStates';
@@ -20,7 +20,7 @@ export class BoschAlertHomebridgePlatform implements DynamicPlatformPlugin {
   // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
   // this Promise will resolve after pairing is done
-  public readonly pairingProcess: Promise<void>;
+  public readonly pairingProcess: Promise<unknown>;
 
   // Bosch client
   public Client: BshcClient;
@@ -48,10 +48,16 @@ export class BoschAlertHomebridgePlatform implements DynamicPlatformPlugin {
       .build();
 
     if (config.autoPair) {
-      this.pairingProcess = this.pair(bshb) as Promise<void>;
+      // Initiate pairing process if required.
+      // This does a test call. If this fails, pairing is started.
+      this.pairingProcess = firstValueFrom(
+        bshb.pairIfNeeded(
+          'OSS Homebridge plugin (generated)',
+          'oss_homebridge_plugin_gen',
+          this.config.systemPassword));
     } else {
       // We are already paired, so resolve immedeatley
-      this.pairingProcess = new Promise((resolve) => {
+      this.pairingProcess = new Promise<void>((resolve) => {
         resolve();
       });
     }
@@ -61,8 +67,12 @@ export class BoschAlertHomebridgePlatform implements DynamicPlatformPlugin {
 
     this.api.on('didFinishLaunching', () => {
       log.debug('Executed didFinishLaunching callback');
+
       this.pairingProcess.then(() => {
+        // Only add/recover devices if pairing succeded
         this.discoverDevices();
+      }).catch((reason) => {
+        this.log.error('Pairing failed:', reason);
       });
     });
   }
@@ -104,14 +114,6 @@ export class BoschAlertHomebridgePlatform implements DynamicPlatformPlugin {
     writeFileSync(certFilePath, cert.private);
     writeFileSync(keyFilePath, cert.cert);
     return [cert.cert, cert.private];
-  }
-
-  // Initiate pairing if required
-  async pair(bshb: BoschSmartHomeBridge) {
-    return firstValueFrom(bshb.pairIfNeeded('OSS Homebridge plugin (generated)', 'oss_homebridge_plugin_gen', this.config.systemPassword))
-      .catch((reason) => {
-        this.log.error('Pairing failed:', reason);
-      });
   }
 
   discoverDevices() {
