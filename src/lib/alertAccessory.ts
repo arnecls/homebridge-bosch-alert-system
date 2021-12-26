@@ -4,7 +4,7 @@ import { BshbError, BshbErrorType, BshcClient } from 'bosch-smart-home-bridge';
 import { BoschAlertHomebridgePlatform } from './platform';
 import { firstValueFrom } from 'rxjs';
 import { rejects } from 'assert';
-import { HomeKitSecurityState, BoschSecurityState, BoschAlarmState } from './alertStates';
+import { HomeKitSecurityState, BoschSecurityState, BoschAlarmState } from '../model/alertStates';
 
 export class AlertSystemAccessory {
   private service: Service;

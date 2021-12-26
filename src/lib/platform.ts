@@ -1,8 +1,8 @@
 import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
 import { BshcClient, BoschSmartHomeBridgeBuilder, BoschSmartHomeBridge } from 'bosch-smart-home-bridge';
-import { PLATFORM_NAME, PLUGIN_NAME, UUID } from './settings';
+import { PLATFORM_NAME, PLUGIN_NAME, UUID } from '../model/settings';
 import { AlertSystemAccessory } from './alertAccessory';
-import { HomeKitSecurityState } from './alertStates';
+import { HomeKitSecurityState } from '../model/alertStates';
 import { firstValueFrom } from 'rxjs';
 import { readFileSync, existsSync, writeFileSync } from 'fs';
 import * as selfsigned from 'selfsigned';

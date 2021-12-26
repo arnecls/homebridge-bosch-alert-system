@@ -1,11 +1,8 @@
 import { API } from 'homebridge';
 
-import { PLATFORM_NAME } from './settings';
-import { BoschAlertHomebridgePlatform } from './platform';
+import { PLATFORM_NAME } from './model/settings';
+import { BoschAlertHomebridgePlatform } from './lib/platform';
 
-/**
- * This method registers the platform with Homebridge
- */
 export = (api: API) => {
   api.registerPlatform(PLATFORM_NAME, BoschAlertHomebridgePlatform);
 };
