@@ -26,18 +26,19 @@ Triggering alarms is currently not supported, but an active alarm will be displa
 
 ## Certificates
 
-The Smarthome API uses mutual TLS to protect itself from unwanted access.  
+The Smarthome API uses [mutual TLS](https://www.cloudflare.com/de-de/learning/access-management/what-is-mutual-tls/) to protect itself from unwanted access.  
 This requires you to authenticate the plugin before it can be used.  
 To do so, several steps need to be executed.
 
-It is recommended to generate and register certificates yourself, as these credentials will stay intact even when the homebridge plugin state is lost. It is also much clearer on when to use the "pair" button on your controller.
+It is recommended to generate and register a certificate yourself, as these credentials will stay intact even when the homebridge state is lost and you have more control over them (e.g. you can define the lifetime). It is also much clearer on when to use the "pair" button on your controller.
 
 ### Let homebridge generate certificates
 
-This option generates certificates through the homebridge plugin.  
+This option generates a certificate through the homebridge plugin.  
+The certificate will stay valid for 10 years.
 To enable this you must provide your Bosch smarthome controller system password.
 
-After configuring the plugin, and *_before you restart homebridge_* you have to press the pairing button (2) on your Bosch smarthome controller. 
+After configuring the plugin, and ideally *_before you restart homebridge_* you have to press the pairing button (2) on your Bosch smarthome controller. 
 
 ![Smarthome controller](docs/pair_button.png)
 
@@ -49,13 +50,13 @@ If you have to re-pair, you need to remove the plugin from the bosch smarthome a
 These steps have been derived from the [Bosch API docs](https://github.com/BoschSmartHome/bosch-shc-api-docs/tree/master/postman).
 
 
-1. You need to create an RSA key pair, that will identifiy your client.
+1. You need to create an RSA key pair, that will identifiy your client. The following will create a certificate that is valid for 10 years (`-days 3650`).
 
    ```bash
    openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout client-key.pem -out client-cert.pem
    ```
 
-2. Find out your Smarthome controller IP. Test it with the following command
+2. Find out your Smarthome controller IP. Test it with the following command. The `CONTROLLER_IP` variable will be used in later steps.
    
    ```bash
    CONTROLLER_IP=192.168.0.10
@@ -78,8 +79,8 @@ These steps have been derived from the [Bosch API docs](https://github.com/Bosch
        "certificate": "insert the content of client-cert.pem here"
    }
    ```
-4. Press the paring button on your Smarthome controller
-5. Pair with the controller
+4. Press the paring button on your Smarthome controller (see [previous section](#let-homebridge-generate-certificates))
+5. Pair with the controller. Please note that the port used in step 2 is different for this call.
 
    ```bash
    curl -sk -X POST \

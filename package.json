@@ -38,7 +38,9 @@
     "bosch",
     "smarthome",
     "alert",
-    "alerting"
+    "alerting",
+    "security",
+    "intrusion"
   ],
   "dependencies": {
     "bosch-smart-home-bridge": "^1.0.0",
