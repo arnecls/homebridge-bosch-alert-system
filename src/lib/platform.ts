@@ -5,7 +5,7 @@ import { AlertSystemAccessory } from './alertAccessory';
 import { HomeKitSecurityState } from '../model/alertStates';
 import { firstValueFrom } from 'rxjs';
 import { readFileSync, existsSync, writeFileSync } from 'fs';
-import * as selfsigned from 'selfsigned';
+import selfsigned from 'selfsigned';
 import { HomeBridgeLogWrapper } from './logger';
 
 /**
@@ -18,7 +18,7 @@ export class BoschAlertHomebridgePlatform implements DynamicPlatformPlugin {
   public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
 
   // this is used to track restored cached accessories
-  public readonly accessories: PlatformAccessory[] = [];
+  public readonly accessories: PlatformAccessory[] = []; 
   // this Promise will resolve after pairing is done
   public readonly pairingProcess: Promise<unknown>;
 
@@ -102,7 +102,7 @@ export class BoschAlertHomebridgePlatform implements DynamicPlatformPlugin {
     this.log.info('Generating client certficate');
 
     // Create a certificate that is valid for 10 years
-    const cert = selfsigned.generate(undefined, {
+    const cert = selfsigned.generate(null, {
       keySize: 2048,
       clientCertificate: undefined,
       algorithm: 'sha256',
