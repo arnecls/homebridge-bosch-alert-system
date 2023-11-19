@@ -107,3 +107,40 @@ As Homebridge does not support multi-line text fields, but linefeeds are require
 base64 -i client-cert.pem # your encoded certificate
 base64 -i client-key.pem  # your encoded client key
 ```
+
+## Maintenance
+
+This plugin uses [volta](https://volta.sh) to manage nodejs tools dependencies.
+
+The repository is based on the [homebridge plugin template](https://github.com/homebridge/homebridge-plugin-template/tree/latest). Take more detail build instructions from there.
+
+Here are some useful commands
+
+### Build and test
+
+```
+# Run once for installing latest dev dependencies
+npm install
+
+# Run once per session for testing
+homebridge -D &
+
+# Build
+npm run build
+
+# Update changes for local homebridge to use
+npm link
+```
+
+### Publish
+
+```
+npm publish --dry-run
+npm publish --tag '1.0.3'
+```
+
+### Update package-lock.json
+
+```
+npm i --package-lock-only
+```
