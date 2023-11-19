@@ -102,9 +102,9 @@ export class BoschAlertHomebridgePlatform implements DynamicPlatformPlugin {
     this.log.info('Generating client certficate');
 
     // Create a certificate that is valid for 10 years
-    const cert = selfsigned.generate(null, {
+    const cert = selfsigned.generate(undefined, {
       keySize: 2048,
-      clientCertificate: false,
+      clientCertificate: undefined,
       algorithm: 'sha256',
       days: 3650});
 
